@@ -1,0 +1,19 @@
+#!/bin/bash
+
+#SBATCH --job-name=train_viscomp
+#SBATCH -p gpu
+#SBATCH --gres=gpu:1
+#SBATCH -t 05:00:00
+
+module purge
+module load 2021
+module load Anaconda3/2021.05
+
+source activate viscomp
+
+cp -r $HOME/github_pages/visual-compatibility-master/data "$TMPDIR"
+mkdir "$TMPDIR"/github_pages/visual-compatibility-master/output_dir
+
+python train.py -d polyvore "TMPDIR"/data "$TMPDIR"/output_dir
+
+cp -r "$TMPDIR"/output_dir $HOME
