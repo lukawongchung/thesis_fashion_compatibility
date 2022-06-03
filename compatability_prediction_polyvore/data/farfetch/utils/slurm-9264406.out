@@ -1,0 +1,30 @@
+iterating through ids
+../images/14/75/57/74/.jpg
+Traceback (most recent call last):
+  File "extract_features_farfetch.py", line 83, in <module>
+    assert os.path.exists(image_path)
+AssertionError
+iterating through ids
+../images/14/18/64/36/.jpg
+Traceback (most recent call last):
+  File "extract_features_farfetch.py", line 83, in <module>
+    assert os.path.exists(image_path)
+AssertionError
+iterating through ids
+../images/12/99/40/73/.jpg
+Traceback (most recent call last):
+  File "extract_features_farfetch.py", line 83, in <module>
+    assert os.path.exists(image_path)
+AssertionError
+Traceback (most recent call last):
+  File "create_dataset_farfetch.py", line 39, in <module>
+    raise FileNotFound('The extracted features file {} does not exist'.format(feat_pkl))
+NameError: name 'FileNotFound' is not defined
+Traceback (most recent call last):
+  File "create_dataset_farfetch.py", line 39, in <module>
+    raise FileNotFound('The extracted features file {} does not exist'.format(feat_pkl))
+NameError: name 'FileNotFound' is not defined
+Traceback (most recent call last):
+  File "create_dataset_farfetch.py", line 39, in <module>
+    raise FileNotFound('The extracted features file {} does not exist'.format(feat_pkl))
+NameError: name 'FileNotFound' is not defined

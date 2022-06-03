@@ -12,17 +12,20 @@ import shutil
 from utils import sparse_to_tuple, get_degree_supports, normalize_nonsym_adj
 from model.CompatibilityGAE import CompatibilityGAE
 from utils import construct_feed_dict, write_log, support_dropout
-from dataloaders import DataLoaderPolyvore, DataLoaderFashionGen, DataLoaderAmazon
+from dataloaders import DataLoaderPolyvore, DataLoaderFashionGen, DataLoaderAmazon, DataLoaderFarfetch
+
+# Disable eager execution
+tf.compat.v1.disable_eager_execution()
 
 # Set random seed
 seed = int(time.time()) # 12342
 np.random.seed(seed)
-tf.set_random_seed(seed)
+tf.compat.v1.set_random_seed(seed)
 
 # Settings
 ap = argparse.ArgumentParser()
 ap.add_argument("-d", "--dataset", type=str, default="polyvore",
-                choices=['fashiongen', 'polyvore', 'amazon'],
+                choices=['fashiongen', 'polyvore', 'amazon', 'farfetch'],
                 help="Dataset string.")
 
 ap.add_argument("-lr", "--learning_rate", type=float, default=0.001,
@@ -86,16 +89,18 @@ ADJ_SELF_CONNECTIONS = True
 VERBOSE = True
 
 # prepare data_loader
-if DATASET in ['fashiongen', 'polyvore']:
+if DATASET in ['fashiongen', 'polyvore', 'farfetch']:
     if DATASET == 'fashiongen':
         dl = DataLoaderFashionGen()
     elif DATASET == 'polyvore':
         dl = DataLoaderPolyvore()
+    elif DATASET == 'farfetch':
+        dl = DataLoaderFarfetch()
     train_features, adj_train, train_labels, train_r_indices, train_c_indices = dl.get_phase('train')
     val_features, adj_val, val_labels, val_r_indices, val_c_indices = dl.get_phase('valid')
     test_features, adj_test, test_labels, test_r_indices, test_c_indices = dl.get_phase('test')
     adj_q, q_r_indices, q_c_indices, q_labels, q_ids, q_valid = dl.get_test_questions()
-    if DATASET == 'polyvore':
+    if DATASET in ['polyvore', 'farfetch']:
         res_adj_q, res_q_r_indices, res_q_c_indices, res_q_labels, res_q_ids, res_q_valid = dl.get_test_questions(resampled=True) # resampled
     train_features, mean, std = dl.normalize_features(train_features, get_moments=True)
     val_features = dl.normalize_features(val_features, mean=mean, std=std)
@@ -134,7 +139,7 @@ val_support = get_degree_supports(adj_val, DEGREE, adj_self_con=ADJ_SELF_CONNECT
 test_support = get_degree_supports(adj_test, DEGREE, adj_self_con=ADJ_SELF_CONNECTIONS)
 if DATASET != 'amazon':
     q_support = get_degree_supports(adj_q, DEGREE, adj_self_con=ADJ_SELF_CONNECTIONS)
-if DATASET == 'polyvore':
+if DATASET in ['polyvore', 'farfetch']:
     res_q_support = get_degree_supports(res_adj_q, DEGREE, adj_self_con=ADJ_SELF_CONNECTIONS)
 
 for i in range(1, len(train_support)):
@@ -143,19 +148,19 @@ for i in range(1, len(train_support)):
     test_support[i] = normalize_nonsym_adj(test_support[i])
     if DATASET != 'amazon':
         q_support[i] = normalize_nonsym_adj(q_support[i])
-    if DATASET == 'polyvore':
+    if DATASET in ['polyvore', 'farfetch']:
         res_q_support[i] = normalize_nonsym_adj(res_q_support[i])    
 
 num_support = len(train_support)
 placeholders = {
-    'row_indices': tf.placeholder(tf.int32, shape=(None,)),
-    'col_indices': tf.placeholder(tf.int32, shape=(None,)),
-    'dropout': tf.placeholder_with_default(0., shape=()),
-    'weight_decay': tf.placeholder_with_default(0., shape=()),
-    'is_train': tf.placeholder_with_default(True, shape=()),
-    'support': [tf.sparse_placeholder(tf.float32, shape=(None, None)) for sup in range(num_support)],
-    'node_features': tf.placeholder(tf.float32, shape=(None, None)),
-    'labels': tf.placeholder(tf.float32, shape=(None,))   
+    'row_indices': tf.compat.v1.placeholder(tf.int32, shape=(None,)),
+    'col_indices': tf.compat.v1.placeholder(tf.int32, shape=(None,)),
+    'dropout': tf.compat.v1.placeholder_with_default(0., shape=()),
+    'weight_decay': tf.compat.v1.placeholder_with_default(0., shape=()),
+    'is_train': tf.compat.v1.placeholder_with_default(True, shape=()),
+    'support': [tf.compat.v1.sparse_placeholder(tf.float32, shape=(None, None)) for sup in range(num_support)],
+    'node_features': tf.compat.v1.placeholder(tf.float32, shape=(None, None)),
+    'labels': tf.compat.v1.placeholder(tf.float32, shape=(None,))   
 }
 
 model = CompatibilityGAE(placeholders,
@@ -185,14 +190,14 @@ else:
                         test_labels, test_r_indices, test_c_indices, 0., is_train=BN_AS_TRAIN)
 
 # Collect all variables to be logged into summary
-merged_summary = tf.summary.merge_all()
+merged_summary = tf.compat.v1.summary.merge_all()
 
-sess = tf.Session()
-sess.run(tf.global_variables_initializer())
+sess = tf.compat.v1.Session()
+sess.run(tf.compat.v1.global_variables_initializer())
 
 if WRITESUMMARY:
-    train_summary_writer = tf.summary.FileWriter(SUMMARIESDIR + '/train', sess.graph)
-    val_summary_writer = tf.summary.FileWriter(SUMMARIESDIR + '/val')
+    train_summary_writer = tf.compat.v1.summary.FileWriter(SUMMARIESDIR + '/train', sess.graph)
+    val_summary_writer = tf.compat.v1.summary.FileWriter(SUMMARIESDIR + '/val')
 else:
     train_summary_writer = None
     val_summary_writer = None
@@ -245,7 +250,7 @@ for epoch in range(NB_EPOCH):
         best_val_score = val_acc
         best_epoch = epoch
         best_epoch_train_score = train_acc
-        saver = tf.train.Saver()
+        saver = tf.compat.v1.train.Saver()
         save_path = saver.save(sess, "%s/best_epoch.ckpt" % (SUMMARIESDIR))
 
     if train_acc > best_train_score:
@@ -263,7 +268,7 @@ for epoch in range(NB_EPOCH):
         val_summary_writer.flush()
 
 # store model
-saver = tf.train.Saver()
+saver = tf.compat.v1.train.Saver()
 save_path = saver.save(sess, "%s/%s.ckpt" % (SUMMARIESDIR, model.name), global_step=model.global_step)
 
 if VERBOSE:

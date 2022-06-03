@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#SBATCH --job-name=train_viscomp
+#SBATCH -p gpu_shared
+#SBATCH --gres=gpu:1
+#SBATCH -t 8:00:00
+
+module purge
+module load 2021
+module load Anaconda3/2021.05
+
+source activate viscomp
+
+python extract_features_farfetch.py --phase "valid"
+python extract_features_farfetch.py --phase "train"
+python extract_features_farfetch.py --phase "test"
+
+python create_dataset_farfetch.py --phase "train"
+python create_dataset_farfetch.py --phase "valid"
+python create_dataset_farfetch.py --phase "test"
